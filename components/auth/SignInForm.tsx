@@ -33,7 +33,7 @@ export default function SignInForm() {
     return (
         <div className="flex flex-5 items-center justify-center h-150 w-100 bg-gray-100 rounded-2xl shadow-md">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-8">
-                <h2 className="text-2xl font-bold text-black ">Sign In</h2>
+                <h2 className="text-2xl font-bold text-black text-center">Sign In</h2>
                 {error && <p className="text-red-500">{error}</p>}
                 <input
                     type="email"

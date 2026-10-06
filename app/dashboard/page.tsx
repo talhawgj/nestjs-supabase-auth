@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -10,12 +11,26 @@ export default async function DashboardPage() {
   }
 
   const user = data.user;
+
+  // Fetch role from the profiles table
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role, name")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError) {
+    console.error("Dashboard profile fetch error:", profileError);
+  }
+
+  const role = profile?.role || "user";
+
   const user_details = {
     email: user.email,
-    role: user.app_metadata?.role || "N/A",
-    name: user.user_metadata?.name || "N/A",
+    name: profile?.name || user.user_metadata?.name || "N/A",
     phone: user.user_metadata?.phone || "N/A",
     provider: user.app_metadata?.provider || "email",
+    role: role,
     createdAt: user.created_at
       ? new Date(user.created_at).toLocaleDateString("en-US", {
           year: "numeric",
@@ -38,7 +53,7 @@ export default async function DashboardPage() {
     <main className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
         {/* Header Banner */}
-        <div className="bg-black px-6 py-8 text-white text-center">
+        <div className="bg-blue-600 px-6 py-8 text-white text-center">
           <div className="w-16 h-16 bg-white text-blue-600 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-3 shadow">
             {user_details.name !== "N/A"
               ? user_details.name.charAt(0).toUpperCase()
@@ -52,9 +67,20 @@ export default async function DashboardPage() {
 
         {/* Profile Details List */}
         <div className="p-6 space-y-4 text-black">
-          <h2 className="text-lg font-semibold text-gray-800 border-b pb-2">
-            Profile Details
-          </h2>
+          <div className="flex justify-between items-center border-b pb-2">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Profile Details
+            </h2>
+            <span
+              className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                user_details.role === "admin"
+                  ? "bg-red-100 text-red-700"
+                  : "bg-blue-100 text-blue-700"
+              }`}
+            >
+              {user_details.role}
+            </span>
+          </div>
 
           <div className="grid grid-cols-1 gap-3 text-sm">
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -63,13 +89,15 @@ export default async function DashboardPage() {
             </div>
 
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-500 font-medium">Role</span>
-              <span className="font-semibold text-gray-900">{user_details.role}</span>
+              <span className="text-gray-500 font-medium">Email Address</span>
+              <span className="font-semibold text-gray-900">{user_details.email}</span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
-              <span className="text-gray-500 font-medium">Email Address</span>
-              <span className="font-semibold text-gray-900">{user_details.email}</span>
+              <span className="text-gray-500 font-medium">Assigned Role</span>
+              <span className="font-semibold capitalize text-gray-900">
+                {user_details.role}
+              </span>
             </div>
 
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
@@ -116,8 +144,20 @@ export default async function DashboardPage() {
             </div>
           </div>
 
+          {/* Conditional Admin Panel Access Button */}
+          {user_details.role === "admin" && (
+            <div className="pt-2">
+              <Link
+                href="/admin"
+                className="w-full block text-center bg-gray-900 hover:bg-black text-white font-medium py-2.5 px-4 rounded-xl transition duration-150"
+              >
+                Go to Admin Panel →
+              </Link>
+            </div>
+          )}
+
           {/* Sign Out Action */}
-          <div className="pt-4 border-t border-gray-200">
+          <div className="pt-2 border-t border-gray-200">
             <form action={handleSignOut}>
               <button
                 type="submit"
